@@ -124,6 +124,12 @@ export class RaceScene {
   private drawCourse(state: RaceState) {
     const map = this.mapToScreen()
     this.courseLayer.clear()
+    this.drawStartLine(state, map)
+    this.drawMarks(state, map)
+    this.drawLeewardGate(state, map)
+  }
+
+  private drawMarks(state: RaceState, map: ScreenMapper) {
     this.courseLayer.setStrokeStyle({ width: 2, color: 0x5174b3, alpha: 0.6 })
     state.marks.forEach((mark, index) => {
       const { x, y } = map(mark)
@@ -133,6 +139,57 @@ export class RaceScene {
       this.courseLayer.setStrokeStyle({ width: 1, color: 0xffffff })
       this.courseLayer.moveTo(x + 10, y - 10)
       this.courseLayer.lineTo(x + 10 + index * 4, y - 10)
+    })
+  }
+
+  private drawStartLine(state: RaceState, map: ScreenMapper) {
+    const pin = map(state.startLine.pin)
+    const committee = map(state.startLine.committee)
+
+    this.courseLayer.setStrokeStyle({ width: 1.5, color: 0xffffff, alpha: 0.6 })
+    this.courseLayer.moveTo(pin.x, pin.y)
+    this.courseLayer.lineTo(committee.x, committee.y)
+
+    // Pin mark
+    this.courseLayer.fill({ color: 0xffd166, alpha: 0.9 })
+    this.courseLayer.circle(pin.x, pin.y, 8)
+    this.courseLayer.fill()
+
+    // Committee boat shape
+    const angle = Math.atan2(pin.y - committee.y, pin.x - committee.x)
+    const cos = Math.cos(angle)
+    const sin = Math.sin(angle)
+    const hull = [
+      { x: 0, y: -14 },
+      { x: 18, y: 12 },
+      { x: -18, y: 12 },
+    ].map(({ x, y }) => ({
+      x: committee.x + x * cos - y * sin,
+      y: committee.y + x * sin + y * cos,
+    }))
+
+    this.courseLayer.fill({ color: 0x5cc8ff, alpha: 0.95 })
+    this.courseLayer.poly([
+      hull[0].x,
+      hull[0].y,
+      hull[1].x,
+      hull[1].y,
+      hull[2].x,
+      hull[2].y,
+    ])
+    this.courseLayer.fill()
+  }
+
+  private drawLeewardGate(state: RaceState, map: ScreenMapper) {
+    const left = map(state.leewardGate.left)
+    const right = map(state.leewardGate.right)
+    this.courseLayer.setStrokeStyle({ width: 2, color: 0xff6b6b, alpha: 0.8 })
+    this.courseLayer.moveTo(left.x, left.y)
+    this.courseLayer.lineTo(right.x, right.y)
+    ;[left, right].forEach((gateMark) => {
+      this.courseLayer.fill({ color: 0xff6b6b, alpha: 0.9 })
+      this.courseLayer.circle(gateMark.x, gateMark.y, 7)
+      this.courseLayer.fill()
     })
   }
 

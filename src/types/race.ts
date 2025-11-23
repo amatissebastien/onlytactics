@@ -5,6 +5,16 @@ export type Wind = {
   speed: number
 }
 
+export type StartLine = {
+  pin: Vec2
+  committee: Vec2
+}
+
+export type Gate = {
+  left: Vec2
+  right: Vec2
+}
+
 export type BoatState = {
   id: string
   name: string
@@ -32,6 +42,8 @@ export type RaceState = {
   wind: Wind
   boats: Record<string, BoatState>
   marks: Vec2[]
+  startLine: StartLine
+  leewardGate: Gate
   phase: RacePhase
 }
 

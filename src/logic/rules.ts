@@ -73,7 +73,6 @@ export class RulesEngine {
     a: BoatState,
     b: BoatState,
   ): RuleResolution[] {
-    if (state.phase === 'finished') return []
     const distanceApart = distance(a, b)
     if (distanceApart > PORT_STARBOARD_DISTANCE) return []
 

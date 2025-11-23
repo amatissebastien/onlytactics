@@ -77,7 +77,7 @@ export class HostLoop {
   }
 
   private applyWindOscillation(state: RaceState, dt: number) {
-    const cycleSeconds = appEnv.fixedWind ? Infinity : 30
+    const cycleSeconds = appEnv.fixedWind ? Infinity : 10
     this.windTimer += dt
     if (this.windTimer < cycleSeconds) {
       state.wind.directionDeg = state.baselineWindDeg + this.pendingWindShift

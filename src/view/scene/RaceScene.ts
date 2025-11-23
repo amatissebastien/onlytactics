@@ -80,6 +80,7 @@ export class RaceScene {
   private boatLayer = new Container()
   private hudLayer = new Container()
   private windArrow = new Graphics()
+  private windArrowFill = new Graphics()
   private windText = new Text({
     text: '',
     style: { fill: '#ffffff', fontSize: 12 },
@@ -99,9 +100,10 @@ export class RaceScene {
       this.hudLayer,
     )
 
-    this.hudLayer.addChild(this.windArrow, this.windText, this.timerText)
-    this.windText.position.set(20, 60)
+    this.hudLayer.addChild(this.windArrow, this.windArrowFill, this.windText, this.timerText)
+    this.windText.position.set(80, 20)
     this.timerText.position.set(20, 20)
+    this.windText.position.set(20, 48)
 
     this.drawWater()
   }
@@ -273,26 +275,32 @@ export class RaceScene {
       Math.abs(shift) < 0.5 ? 'ON' : shift > 0 ? `${shift.toFixed(1)}° R` : `${shift.toFixed(1)}° L`
     this.windText.text = `Wind ${state.wind.directionDeg.toFixed(0)}° (${shiftText}) @ ${state.wind.speed.toFixed(1)}kts`
 
-    const center = { x: 40, y: 120 }
-    const length = 50
-    const heading = degToRad(state.wind.directionDeg)
+    const center = { x: 80, y: 120 }
+    const length = 60
+    const heading = degToRad(state.wind.directionDeg + 180)
     const tipX = center.x + length * Math.sin(heading)
     const tipY = center.y - length * Math.cos(heading)
 
+    const arrowShift = state.wind.directionDeg - state.baselineWindDeg
+    const shiftColor = arrowShift > 1 ? 0xff8f70 : arrowShift < -1 ? 0x70d6ff : 0xffffff
+
     this.windArrow.clear()
-    this.windArrow.setStrokeStyle({ width: 3, color: 0xffffff })
+    this.windArrow.setStrokeStyle({ width: 3, color: shiftColor })
     this.windArrow.moveTo(center.x, center.y)
     this.windArrow.lineTo(tipX, tipY)
-    this.windArrow.fill({ color: 0xffffff })
-    this.windArrow.poly([
+    this.windArrow.stroke()
+
+    this.windArrowFill.clear()
+    this.windArrowFill.fill({ color: shiftColor })
+    this.windArrowFill.poly([
       tipX,
       tipY,
-      tipX - 6,
-      tipY + 10,
-      tipX + 6,
-      tipY + 10,
+      tipX + 8,
+      tipY - 12,
+      tipX - 8,
+      tipY - 12,
     ])
-    this.windArrow.fill()
+    this.windArrowFill.fill()
   }
 }
 

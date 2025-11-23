@@ -7,7 +7,11 @@ const formatAngle = (deg: number) => `${deg.toFixed(1)}°`
 const formatSpeed = (speed: number) => `${speed.toFixed(2)} kts`
 const formatCoord = (value: number) => `${value.toFixed(1)} m`
 
-export const DebugPanel = () => {
+type Props = {
+  onClose?: () => void
+}
+
+export const DebugPanel = ({ onClose }: Props) => {
   const race = useRaceState()
 
   const boats = useMemo(
@@ -20,6 +24,11 @@ export const DebugPanel = () => {
 
   return (
     <div className="debug-panel">
+      {onClose && (
+        <button type="button" className="debug-close" onClick={onClose}>
+          ×
+        </button>
+      )}
       <div className="debug-row">
         <strong>Wind:</strong>
         <span>{formatAngle(race.wind.directionDeg)}</span>

@@ -1,10 +1,11 @@
-import { stepRaceState } from '@/logic/physics'
+import { stepRaceState, clamp as physicsClamp } from '@/logic/physics'
 import { RulesEngine } from '@/logic/rules'
 import { cloneRaceState } from '@/state/factories'
 import { raceStore, RaceStore } from '@/state/raceStore'
 import type { RaceEvent, RaceState } from '@/types/race'
 import { createSeededRandom } from '@/utils/rng'
 import { appEnv } from '@/config/env'
+import { createId } from '@/utils/ids'
 
 type HostLoopOptions = {
   onEvents?: (events: RaceEvent[]) => void
@@ -26,8 +27,15 @@ export class HostLoop {
   }
 
   private windTimer = 0
+  private pendingWindShift = 0
 
   private windRandom
+
+  private startSignalSent = false
+
+  private ocsBoats = new Set<string>()
+
+  private courseSideSign?: number
 
   start() {
     if (this.timer) return
@@ -54,12 +62,13 @@ export class HostLoop {
     stepRaceState(next, inputs, dt)
     this.applyWindOscillation(next, dt)
 
+    const startEvents = this.updateStartLine(next)
     const resolutions = this.rules.evaluate(next)
     resolutions.forEach((violation) => {
       const offender = next.boats[violation.offenderId]
       if (offender) offender.penalties += 1
     })
-    const events = this.rules.toEvents(next, resolutions)
+    const events = [...startEvents, ...this.rules.toEvents(next, resolutions)]
 
     this.store.setState(next)
     this.store.appendEvents(events)
@@ -68,19 +77,96 @@ export class HostLoop {
   }
 
   private applyWindOscillation(state: RaceState, dt: number) {
-    if (appEnv.fixedWind) {
-      state.wind.directionDeg = state.baselineWindDeg
+    const cycleSeconds = appEnv.fixedWind ? Infinity : 30
+    this.windTimer += dt
+    if (this.windTimer < cycleSeconds) {
+      state.wind.directionDeg = state.baselineWindDeg + this.pendingWindShift
       return
     }
-
-    this.windTimer += dt
-    if (this.windTimer < 1) return
     this.windTimer = 0
 
-    const shiftDeg = (this.windRandom() - 0.5) * 2 // -1 to 1
-    const speedShift = (this.windRandom() - 0.5) * 0.3
-    state.wind.directionDeg = state.baselineWindDeg + shiftDeg * 10
-    state.wind.speed = Math.max(4, Math.min(18, state.wind.speed + speedShift))
+    const shiftDeg = (this.windRandom() - 0.5) * 6 // +/-3 degrees
+    const speedShift = (this.windRandom() - 0.5) * 0.4
+    this.pendingWindShift = physicsClamp(
+      this.pendingWindShift + shiftDeg,
+      -12,
+      12,
+    )
+    state.wind.directionDeg = state.baselineWindDeg + this.pendingWindShift
+    state.wind.speed = Math.max(6, Math.min(16, state.wind.speed + speedShift))
+  }
+
+  private updateStartLine(state: RaceState): RaceEvent[] {
+    const events: RaceEvent[] = []
+    const { committee, pin } = state.startLine
+    const lineVec = {
+      x: pin.x - committee.x,
+      y: pin.y - committee.y,
+    }
+    if (!this.courseSideSign) {
+      const windRad = (state.baselineWindDeg * Math.PI) / 180
+      const windVec = {
+        x: Math.sin(windRad),
+        y: -Math.cos(windRad),
+      }
+      const cross = lineVec.x * windVec.y - lineVec.y * windVec.x
+      this.courseSideSign = cross >= 0 ? 1 : -1
+    }
+
+    const beforeStart = state.t < 0
+
+    if (state.boats) {
+      Object.values(state.boats).forEach((boat) => {
+        const rel = {
+          x: boat.pos.x - committee.x,
+          y: boat.pos.y - committee.y,
+        }
+        const cross = lineVec.x * rel.y - lineVec.y * rel.x
+        const onCourseSide = cross * (this.courseSideSign ?? 1) > 0
+
+        if (beforeStart) {
+          if (onCourseSide) {
+            if (!boat.overEarly) {
+              boat.overEarly = true
+              this.ocsBoats.add(boat.id)
+              events.push({
+                eventId: createId('event'),
+                kind: 'penalty',
+                t: state.t,
+                message: `${boat.name} OCS - return below the line`,
+                boats: [boat.id],
+                ruleId: '29',
+              })
+            }
+          } else if (boat.overEarly) {
+            boat.overEarly = false
+          }
+        }
+      })
+    }
+
+    if (!beforeStart && !this.startSignalSent) {
+      this.startSignalSent = true
+      if (this.ocsBoats.size === 0) {
+        events.push({
+          eventId: createId('event'),
+          kind: 'start_signal',
+          t: state.t,
+          message: 'Start! All clear.',
+        })
+      } else {
+        events.push({
+          eventId: createId('event'),
+          kind: 'general_recall',
+          t: state.t,
+          message: `Start: ${this.ocsBoats.size} boat(s) OCS`,
+          boats: Array.from(this.ocsBoats),
+        })
+      }
+      this.ocsBoats.clear()
+    }
+
+    return events
   }
 }
 

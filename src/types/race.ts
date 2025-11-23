@@ -25,6 +25,7 @@ export type BoatState = {
   speed: number
   penalties: number
   stallTimer: number
+  overEarly: boolean
 }
 
 export type RaceMeta = {

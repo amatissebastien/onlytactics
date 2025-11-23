@@ -12,7 +12,7 @@ import {
   TURN_RATE_DEG,
 } from './constants'
 
-const clamp = (value: number, min: number, max: number) =>
+export const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value))
 
 export const degToRad = (deg: number) => (deg * Math.PI) / 180
@@ -35,12 +35,38 @@ export const headingFromAwa = (windDirDeg: number, awaDeg: number) =>
 const apparentWindAngle = (boatHeadingDeg: number, windDirDeg: number) =>
   angleDiff(boatHeadingDeg, windDirDeg)
 
+const polarTable = [
+  { awa: 0, ratio: 0 },
+  { awa: 30, ratio: 0.45 },
+  { awa: 45, ratio: 0.65 },
+  { awa: 60, ratio: 0.8 },
+  { awa: 75, ratio: 0.9 },
+  { awa: 90, ratio: 0.95 },
+  { awa: 110, ratio: 1.05 },
+  { awa: 135, ratio: 1.15 },
+  { awa: 150, ratio: 1.05 },
+  { awa: 170, ratio: 0.95 },
+  { awa: 180, ratio: 0.9 },
+]
+
+const lookupPolarRatio = (awa: number) => {
+  const absAwa = clamp(Math.abs(awa), 0, 180)
+  for (let i = 0; i < polarTable.length - 1; i += 1) {
+    const current = polarTable[i]
+    const next = polarTable[i + 1]
+    if (absAwa >= current.awa && absAwa <= next.awa) {
+      const span = next.awa - current.awa || 1
+      const t = (absAwa - current.awa) / span
+      return current.ratio + (next.ratio - current.ratio) * t
+    }
+  }
+  return polarTable[polarTable.length - 1].ratio
+}
+
 const polarTargetSpeed = (awaDeg: number, windSpeed: number, sheet: number) => {
-  const awa = Math.abs(awaDeg)
-  const normalized = clamp((awa - 30) / 150, 0, 1)
-  const efficiency = Math.cos(normalized * (Math.PI / 2))
-  const sheetEffect = 0.5 + 0.5 * clamp(sheet, 0, 1)
-  const target = windSpeed * efficiency * sheetEffect * 1.05
+  const ratio = lookupPolarRatio(awaDeg)
+  const sheetEffect = 0.6 + 0.4 * clamp(sheet, 0, 1)
+  const target = windSpeed * ratio * sheetEffect
   return clamp(target, 0, MAX_SPEED_KTS)
 }
 

@@ -59,6 +59,7 @@ class BoatView {
     this.container.scale.set(scale)
     this.container.rotation = degToRad(boat.headingDeg)
     this.nameTag.text = `${boat.name} (${boat.penalties})`
+    this.nameTag.style.fill = boat.overEarly ? '#ff6b6b' : '#ffffff'
     this.drawProjection(boat, scale)
   }
 
@@ -157,10 +158,16 @@ export class RaceScene {
   private drawStartLine(state: RaceState, map: ScreenMapper) {
     const pin = map(state.startLine.pin)
     const committee = map(state.startLine.committee)
+    const dashed = state.t < 0
 
-    this.courseLayer.setStrokeStyle({ width: 1.5, color: 0xffffff, alpha: 0.6 })
-    this.courseLayer.moveTo(pin.x, pin.y)
-    this.courseLayer.lineTo(committee.x, committee.y)
+    this.courseLayer.setStrokeStyle({ width: 2, color: 0xffffff, alpha: dashed ? 0.4 : 0.9 })
+    if (dashed) {
+      this.drawDashedLine(pin, committee, 12, 8)
+    } else {
+      this.courseLayer.moveTo(pin.x, pin.y)
+      this.courseLayer.lineTo(committee.x, committee.y)
+      this.courseLayer.stroke()
+    }
 
     // Pin mark
     this.courseLayer.fill({ color: 0xffd166, alpha: 0.9 })
@@ -190,6 +197,37 @@ export class RaceScene {
       hull[2].y,
     ])
     this.courseLayer.fill()
+  }
+
+  private drawDashedLine(
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+    dashLength: number,
+    gapLength: number,
+  ) {
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const length = Math.hypot(dx, dy)
+    const segments = Math.floor(length / (dashLength + gapLength))
+    const unitX = dx / length
+    const unitY = dy / length
+    let dist = 0
+    for (let i = 0; i <= segments; i += 1) {
+      const dashStartDist = dist
+      const dashEndDist = Math.min(dist + dashLength, length)
+      const from = {
+        x: start.x + unitX * dashStartDist,
+        y: start.y + unitY * dashStartDist,
+      }
+      const to = {
+        x: start.x + unitX * dashEndDist,
+        y: start.y + unitY * dashEndDist,
+      }
+      this.courseLayer.moveTo(from.x, from.y)
+      this.courseLayer.lineTo(to.x, to.y)
+      dist += dashLength + gapLength
+    }
+    this.courseLayer.stroke()
   }
 
   private drawLeewardGate(state: RaceState, map: ScreenMapper) {

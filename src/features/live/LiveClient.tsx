@@ -23,6 +23,8 @@ export const LiveClient = () => {
     }
   }, [defaultBoatId, race.boats])
 
+  const playerBoat = useMemo(() => race.boats[identity.boatId], [race.boats])
+
   useEffect(() => {
     void network.start()
     return () => network.stop()
@@ -45,6 +47,11 @@ export const LiveClient = () => {
         <p>
           Race <strong>{appEnv.raceId}</strong> as <strong>{role}</strong>
         </p>
+        {playerBoat && (
+          <div className="speed-readout">
+            SPD {playerBoat.speed.toFixed(2)} kts
+          </div>
+        )}
         <div className="event-list">
           {events.slice(-5).map((event) => (
             <div key={event.eventId} className="event-item">
@@ -86,7 +93,7 @@ export const LiveClient = () => {
       </div>
       {showDebug && (
         <div className="debug-dock">
-          <DebugPanel />
+          <DebugPanel onClose={() => setShowDebug(false)} />
         </div>
       )}
     </div>

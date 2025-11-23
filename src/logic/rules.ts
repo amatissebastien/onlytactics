@@ -73,6 +73,7 @@ export class RulesEngine {
     a: BoatState,
     b: BoatState,
   ): RuleResolution[] {
+    if (state.phase === 'finished') return []
     const distanceApart = distance(a, b)
     if (distanceApart > PORT_STARBOARD_DISTANCE) return []
 
@@ -102,8 +103,12 @@ export class RulesEngine {
     if (tackA !== tackB) return []
 
     const perpAngle = degToRad(state.wind.directionDeg + 90)
-    const project = (boat: BoatState) =>
-      boat.pos.x * Math.cos(perpAngle) + boat.pos.y * Math.sin(perpAngle)
+    const lineNormal = {
+      x: Math.cos(perpAngle),
+      y: Math.sin(perpAngle),
+    }
+    const project = (boat: BoatState) => boat.pos.x * lineNormal.x + boat.pos.y * lineNormal.y
+
     const aScore = project(a)
     const bScore = project(b)
     const windward = aScore > bScore ? a : b

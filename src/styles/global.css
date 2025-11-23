@@ -129,6 +129,12 @@ button {
   color: #9fb7ff;
 }
 
+.speed-readout {
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+  font-size: 1rem;
+  color: #4af6c2;
+}
+
 .event-list {
   flex: 1;
   overflow-y: auto;
@@ -337,6 +343,24 @@ kbd {
   flex-direction: column;
   gap: 0.6rem;
   font-size: 0.8rem;
+  position: relative;
+}
+
+.debug-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid #3a4663;
+  background: transparent;
+  color: #aeb5c7;
+  font-size: 1rem;
+  line-height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .debug-row {

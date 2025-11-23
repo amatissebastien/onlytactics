@@ -6,8 +6,8 @@ import type { BoatState, RaceMeta, RaceState, Vec2 } from '@/types/race'
 const defaultBoatColors = [0xf6bd60, 0xf28482, 0x84a59d, 0x4d908e, 0xf94144]
 
 const defaultStartLine = {
-  pin: { x: -70, y: 60 },
-  committee: { x: 70, y: 50 },
+  pin: { x: -210, y: 60 },
+  committee: { x: 210, y: 50 },
 }
 
 const defaultLeewardGate = {
@@ -29,17 +29,22 @@ export const createRaceMeta = (raceId: string, seed?: number): RaceMeta => ({
   seed: seed ?? seedFromString(raceId),
 })
 
-const createBoatState = (name: string, index: number): BoatState => ({
-  id: createId(`boat${index + 1}`),
-  name,
-  color: defaultBoatColors[index % defaultBoatColors.length],
-  headingDeg: 0,
-  desiredHeadingDeg: 0,
-  penalties: 0,
-  pos: { x: -20 + index * 30, y: 40 },
-  speed: 0,
-  stallTimer: 0,
-})
+const createBoatState = (name: string, index: number): BoatState => {
+  const baseX = -40 + index * 30
+  const baseY = 120 + index * 20
+  return {
+    id: createId(`boat${index + 1}`),
+    name,
+    color: defaultBoatColors[index % defaultBoatColors.length],
+    headingDeg: 0,
+    desiredHeadingDeg: 0,
+    penalties: 0,
+    pos: { x: baseX, y: baseY },
+    speed: 0,
+    stallTimer: 0,
+    overEarly: false,
+  }
+}
 
 export const createInitialRaceState = (raceId: string): RaceState => {
   const boats = ['Alpha', 'Bravo'].map((name, idx) => createBoatState(name, idx))
@@ -52,7 +57,7 @@ export const createInitialRaceState = (raceId: string): RaceState => {
     defaultLeewardGate.right,
   ]
   return {
-    t: -120,
+    t: -25,
     meta: createRaceMeta(raceId),
     wind: {
       directionDeg: baselineWind,

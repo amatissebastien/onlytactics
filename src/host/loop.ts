@@ -23,11 +23,15 @@ export class HostLoop {
     private tickRate = appEnv.tickRateHz,
     private options: HostLoopOptions = {},
   ) {
-    this.windRandom = createSeededRandom(this.store.getState().meta.seed)
+    const initialState = this.store.getState()
+    this.windRandom = createSeededRandom(initialState.meta.seed)
+    this.windSpeedTarget = initialState.wind.speed
   }
 
   private windTimer = 0
-  private pendingWindShift = 0
+  private windShift = 0
+  private windTargetShift = 0
+  private windSpeedTarget = 12
 
   private windRandom
 
@@ -94,23 +98,34 @@ export class HostLoop {
   }
 
   private applyWindOscillation(state: RaceState, dt: number) {
-    const cycleSeconds = appEnv.fixedWind ? Infinity : 10
-    this.windTimer += dt
-    if (this.windTimer < cycleSeconds) {
-      state.wind.directionDeg = state.baselineWindDeg + this.pendingWindShift
+    if (appEnv.fixedWind) {
+      state.wind.directionDeg = state.baselineWindDeg
       return
     }
-    this.windTimer = 0
 
-    const shiftDeg = (this.windRandom() - 0.5) * 6 // +/-3 degrees
-    const speedShift = (this.windRandom() - 0.5) * 0.4
-    this.pendingWindShift = physicsClamp(
-      this.pendingWindShift + shiftDeg,
-      -12,
-      12,
-    )
-    state.wind.directionDeg = state.baselineWindDeg + this.pendingWindShift
-    state.wind.speed = Math.max(6, Math.min(16, state.wind.speed + speedShift))
+    const cycleSeconds = 18
+    const settleSeconds = 5
+    const shiftRange = 12
+    const speedMin = 8
+    const speedMax = 16
+
+    this.windTimer += dt
+    if (this.windTimer >= cycleSeconds) {
+      this.windTimer = 0
+      const randomShift = (this.windRandom() - 0.5) * 2 * shiftRange
+      this.windTargetShift = physicsClamp(randomShift, -shiftRange, shiftRange)
+      const speedDelta = (this.windRandom() - 0.5) * 2
+      this.windSpeedTarget = physicsClamp(
+        this.windSpeedTarget + speedDelta,
+        speedMin,
+        speedMax,
+      )
+    }
+
+    const lerpFactor = Math.min(1, dt / settleSeconds)
+    this.windShift += (this.windTargetShift - this.windShift) * lerpFactor
+    state.wind.directionDeg = state.baselineWindDeg + this.windShift
+    state.wind.speed += (this.windSpeedTarget - state.wind.speed) * lerpFactor
   }
 
   private updateStartLine(state: RaceState): RaceEvent[] {

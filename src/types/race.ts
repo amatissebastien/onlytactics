@@ -40,6 +40,7 @@ export type RaceState = {
   t: number
   meta: RaceMeta
   wind: Wind
+  baselineWindDeg: number
   boats: Record<string, BoatState>
   marks: Vec2[]
   startLine: StartLine

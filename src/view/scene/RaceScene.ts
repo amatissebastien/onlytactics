@@ -9,6 +9,7 @@ class BoatView {
   container = new Container()
   hull = new Graphics()
   sail = new Graphics()
+  projection = new Graphics()
   nameTag = new Text({
     text: '',
     style: {
@@ -20,7 +21,7 @@ class BoatView {
 
   constructor(private color: number) {
     this.drawBoat()
-    this.container.addChild(this.hull, this.sail, this.nameTag)
+    this.container.addChild(this.projection, this.hull, this.sail, this.nameTag)
     this.nameTag.position.set(-20, 18)
   }
 
@@ -58,6 +59,17 @@ class BoatView {
     this.container.scale.set(scale)
     this.container.rotation = degToRad(boat.headingDeg)
     this.nameTag.text = `${boat.name} (${boat.penalties})`
+    this.drawProjection(boat, scale)
+  }
+
+  private drawProjection(boat: BoatState, scale: number) {
+    this.projection.clear()
+    const length = Math.max(40, boat.speed * 6) / Math.max(scale, 0.0001)
+    this.projection
+      .setStrokeStyle({ width: 2, color: 0xffffff, alpha: 0.3 })
+      .moveTo(0, -10)
+      .lineTo(0, -10 - length)
+      .stroke()
   }
 }
 
@@ -218,7 +230,10 @@ export class RaceScene {
 
   private drawHud(state: RaceState) {
     this.timerText.text = `${state.phase.toUpperCase()} | T = ${state.t.toFixed(0)}s`
-    this.windText.text = `Wind ${state.wind.directionDeg.toFixed(0)}° @ ${state.wind.speed.toFixed(1)}kts`
+    const shift = state.wind.directionDeg - state.baselineWindDeg
+    const shiftText =
+      Math.abs(shift) < 0.5 ? 'ON' : shift > 0 ? `${shift.toFixed(1)}° R` : `${shift.toFixed(1)}° L`
+    this.windText.text = `Wind ${state.wind.directionDeg.toFixed(0)}° (${shiftText}) @ ${state.wind.speed.toFixed(1)}kts`
 
     const center = { x: 40, y: 120 }
     const length = 50

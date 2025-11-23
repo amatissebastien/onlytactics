@@ -1,3 +1,4 @@
+import { appEnv } from '@/config/env'
 import { createId } from '@/utils/ids'
 import { seedFromString } from '@/utils/rng'
 import type { BoatState, RaceMeta, RaceState, Vec2 } from '@/types/race'
@@ -42,6 +43,7 @@ const createBoatState = (name: string, index: number): BoatState => ({
 
 export const createInitialRaceState = (raceId: string): RaceState => {
   const boats = ['Alpha', 'Bravo'].map((name, idx) => createBoatState(name, idx))
+  const baselineWind = appEnv.baselineWindDeg
   const defaultMarks: Vec2[] = [
     { x: 0, y: -240 }, // windward mark
     defaultStartLine.committee,
@@ -53,9 +55,10 @@ export const createInitialRaceState = (raceId: string): RaceState => {
     t: -120,
     meta: createRaceMeta(raceId),
     wind: {
-      directionDeg: 225,
+      directionDeg: baselineWind,
       speed: 12,
     },
+    baselineWindDeg: baselineWind,
     marks: structuredCopy(defaultMarks),
     startLine: structuredCopy(defaultStartLine),
     leewardGate: structuredCopy(defaultLeewardGate),

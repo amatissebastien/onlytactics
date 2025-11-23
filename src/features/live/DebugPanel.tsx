@@ -13,6 +13,7 @@ type Props = {
 
 export const DebugPanel = ({ onClose }: Props) => {
   const race = useRaceState()
+  const brokerLabel = 'Broker: CloudAMQP'
 
   const boats = useMemo(
     () =>
@@ -39,6 +40,9 @@ export const DebugPanel = ({ onClose }: Props) => {
         <span>{race.phase}</span>
         <strong>t:</strong>
         <span>{race.t.toFixed(1)} s</span>
+      </div>
+      <div className="debug-row">
+        <strong>{brokerLabel}</strong>
       </div>
       <div className="debug-table">
         <div className="debug-table-header">

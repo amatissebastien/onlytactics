@@ -1,7 +1,9 @@
 import mqtt, { type IClientOptions, type MqttClient } from 'mqtt'
 import { presenceTopic } from './topics'
 import { identity } from './identity'
-import { appEnv } from '@/config/env'
+const MQTT_URL = 'wss://cf22679c9b2c46ef967a2b4b1bf0f46f.s1.eu.hivemq.cloud:8884/mqtt'
+const MQTT_USERNAME = 'onlytacticsfrontend'
+const MQTT_PASSWORD = 'Sailing123'
 
 type Handler<T> = (payload: T) => void
 
@@ -28,33 +30,28 @@ export class GameMqttClient {
   connect() {
     if (this.client) return this.connectionPromise ?? Promise.resolve()
 
-    const willPayload = {
-      clientId: identity.clientId,
-      status: 'offline' as const,
-    }
+    const { endpoint, options } = this.buildConnectionOptions()
+    console.info('[mqtt] connecting', {
+      endpoint,
+      username: options.username,
+      password: options.password,
+      clientId: options.clientId,
+      protocol: options.protocol ?? 'auto',
+      hasUsername: Boolean(options.username),
+    })
 
-    const options: IClientOptions = {
-      clientId: identity.clientId,
-      reconnectPeriod: 2000,
-      keepalive: 30,
-      clean: true,
-      connectTimeout: 6000,
-      protocolVersion: 4,
-      will: {
-        topic: presenceTopic(identity.clientId),
-        payload: toBuffer(willPayload),
-        retain: true,
-        qos: 1,
-      },
-    }
-
-    this.client = mqtt.connect(appEnv.mqttUrl, options)
+    this.client = mqtt.connect(endpoint, options)
     this.connectionPromise = new Promise((resolve, reject) => {
       this.client?.once('connect', () => {
-        this.publish(presenceTopic(identity.clientId), {
-          clientId: identity.clientId,
-          status: 'online' as const,
-        }, { retain: true })
+        console.log('connected to mqtt broker')
+        this.publish(
+          presenceTopic(identity.clientId),
+          {
+            clientId: identity.clientId,
+            status: 'online' as const,
+          },
+          { retain: true },
+        )
         resolve()
       })
       this.client?.once('error', (err) => reject(err))
@@ -69,6 +66,32 @@ export class GameMqttClient {
     })
 
     return this.connectionPromise
+  }
+
+  private buildConnectionOptions(): { endpoint: string; options: IClientOptions } {
+    const endpoint = MQTT_URL
+    const options: IClientOptions = {
+      clientId: identity.clientId,
+      reconnectPeriod: 2000,
+      keepalive: 30,
+      clean: true,
+      connectTimeout: 6000,
+      protocolVersion: 4,
+      protocol: 'wss',
+      username: MQTT_USERNAME,
+      password: MQTT_PASSWORD,
+      will: {
+        topic: presenceTopic(identity.clientId),
+        payload: toBuffer({
+          clientId: identity.clientId,
+          status: 'offline' as const,
+        }),
+        retain: true,
+        qos: 1,
+      },
+    }
+
+    return { endpoint, options }
   }
 
   publish(topic: string, payload: unknown, options?: { retain?: boolean }) {

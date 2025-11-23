@@ -29,11 +29,15 @@ export const createRaceMeta = (raceId: string, seed?: number): RaceMeta => ({
   seed: seed ?? seedFromString(raceId),
 })
 
-const createBoatState = (name: string, index: number): BoatState => {
+export const createBoatState = (
+  name: string,
+  index: number,
+  id?: string,
+): BoatState => {
   const baseX = -40 + index * 30
   const baseY = 120 + index * 20
   return {
-    id: createId(`boat${index + 1}`),
+    id: id ?? createId(`boat${index + 1}`),
     name,
     color: defaultBoatColors[index % defaultBoatColors.length],
     headingDeg: 0,

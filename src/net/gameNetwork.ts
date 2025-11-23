@@ -18,7 +18,7 @@ export class GameNetwork {
   private roleListeners = new Set<(role: RaceRole) => void>()
 
   async start() {
-    await this.setRole(appEnv.clientRole)
+    await this.setRole(appEnv.autoHost ? 'host' : appEnv.clientRole)
   }
 
   stop() {
@@ -45,6 +45,7 @@ export class GameNetwork {
       this.controller = new HostController()
       this.playerController = undefined
     } else if (role === 'player') {
+      this.ensureBoatAssignment()
       this.playerController = new PlayerController(() => this.promoteToHost())
       this.controller = this.playerController
     } else {
@@ -63,6 +64,14 @@ export class GameNetwork {
   private setCurrentRole(role: RaceRole) {
     this.currentRole = role
     this.roleListeners.forEach((listener) => listener(role))
+  }
+
+  getPlayerController() {
+    return this.playerController
+  }
+
+  private ensureBoatAssignment() {
+    // placeholder for future multi-boat assignment logic
   }
 }
 

@@ -85,6 +85,9 @@ export class PlayerController extends SubscriberController {
   private handleHostAnnouncement(payload?: HostAnnouncement) {
     this.currentHostId = payload?.clientId
     this.watchHostPresence()
+    if (!payload && this.canPromote()) {
+      this.onPromote?.()
+    }
   }
 
   private watchHostPresence() {

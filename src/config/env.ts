@@ -14,7 +14,6 @@ const toBool = (value: string | undefined, fallback = false) => {
 }
 
 export const appEnv = {
-  mqttUrl: rawEnv.VITE_MQTT_URL ?? 'ws://localhost:9001',
   raceId: rawEnv.VITE_RACE_ID ?? 'dev-race',
   clientRole: (rawEnv.VITE_CLIENT_ROLE ?? 'spectator') as ClientRole,
   clientName: rawEnv.VITE_CLIENT_NAME ?? 'Visitor',
@@ -23,6 +22,7 @@ export const appEnv = {
   debugHud: toBool(rawEnv.VITE_DEBUG_HUD, false),
   fixedWind: toBool(rawEnv.VITE_FIXED_WIND, false),
   baselineWindDeg: toNumber(rawEnv.VITE_BASELINE_WIND_DEG, 360),
+  autoHost: toBool(rawEnv.VITE_AUTO_HOST, true),
 }
 
 export type AppEnv = typeof appEnv

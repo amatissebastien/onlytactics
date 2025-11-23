@@ -11,13 +11,7 @@ cp env.example .env    # adjust values if needed (contains CloudAMQP defaults)
 npm run dev            # starts Vite and connects to the remote broker
 ```
 
-`VITE_MQTT_URL` defaults to the shared CloudAMQP instance:
-
-```
-amqps://ykmhctpq:aj_D4WmGyuhpBNRsobEQUas4Uvs8y-c7@gorilla.lmq.cloudamqp.com/ykmhctpq
-```
-
-If you need to use a different broker, update `VITE_MQTT_URL` in your `.env` and restart `npm run dev`. No local broker is required anymore.
+MQTT credentials are currently hardcoded inside `src/net/mqttClient.ts` while we stabilize the new CloudAMQP instance. If you need to point at a different broker, edit the constants at the top of that file and restart `npm run dev`. The remaining variables in `.env` still control race metadata, debug HUD, etc.
 
 ## Tactician controls
 

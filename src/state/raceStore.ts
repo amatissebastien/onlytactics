@@ -1,6 +1,6 @@
 import { appEnv } from '@/config/env'
 import type { ChatMessage, PlayerInput, RaceEvent, RaceState } from '@/types/race'
-import { cloneRaceState, createInitialRaceState } from './factories'
+import { cloneRaceState, createBoatState, createInitialRaceState } from './factories'
 
 type Listener = () => void
 
@@ -38,6 +38,9 @@ export class RaceStore {
   }
 
   upsertInput = (input: PlayerInput) => {
+    if (!this.state.boats[input.boatId]) {
+      this.addBoat(input.boatId)
+    }
     this.latestInputs[input.boatId] = input
   }
 
@@ -76,6 +79,14 @@ export class RaceStore {
 
   private emit() {
     this.listeners.forEach((listener) => listener())
+  }
+
+  private addBoat(boatId: string) {
+    this.patchState((draft) => {
+      const index = Object.keys(draft.boats).length
+      const name = `Boat ${index + 1}`
+      draft.boats[boatId] = createBoatState(name, index, boatId)
+    })
   }
 }
 

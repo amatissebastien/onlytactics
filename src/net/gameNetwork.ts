@@ -86,32 +86,33 @@ export class GameNetwork {
       const timeout = window.setTimeout(() => {
         const candidates = Array.from(online).sort()
         finish(candidates[0] === identity.clientId ? 'host' : 'player')
-      }, 2500)
+      }, 3000)
 
       cleanup.push(() => window.clearTimeout(timeout))
 
-      cleanup.push(
-        mqttClient.subscribe<HostAnnouncement>(hostTopic, (payload) => {
+      const unsubscribeHost = mqttClient.subscribe<HostAnnouncement>(
+        hostTopic,
+        (payload) => {
           if (resolved) return
-          if (payload?.clientId) {
-            finish(payload.clientId === identity.clientId ? 'host' : 'player')
-          }
-        }),
+          if (!payload?.clientId) return
+          mqttClient.publish(hostTopic, payload, { retain: true })
+          finish(payload.clientId === identity.clientId ? 'host' : 'player')
+        },
       )
+      cleanup.push(unsubscribeHost)
 
-      cleanup.push(
-        mqttClient.subscribe<{ clientId: string; status: 'online' | 'offline' }>(
-          presenceWildcard,
-          (message) => {
-            if (!message?.clientId) return
-            if (message.status === 'online') {
-              online.add(message.clientId)
-            } else {
-              online.delete(message.clientId)
-            }
-          },
-        ),
-      )
+      const unsubscribePresence = mqttClient.subscribe<{
+        clientId: string
+        status: 'online' | 'offline'
+      }>(presenceWildcard, (message) => {
+        if (!message?.clientId) return
+        if (message.status === 'online') {
+          online.add(message.clientId)
+        } else {
+          online.delete(message.clientId)
+        }
+      })
+      cleanup.push(unsubscribePresence)
     })
   }
 

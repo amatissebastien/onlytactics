@@ -35,7 +35,7 @@ export const createBoatState = (
   id?: string,
 ): BoatState => {
   const baseX = -40 + index * 30
-  const baseY = 120 + index * 20
+  const baseY = 120
   return {
     id: id ?? createId(`boat${index + 1}`),
     name,

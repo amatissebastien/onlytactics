@@ -1,0 +1,408 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  background-color: #05070f;
+  color: #f4f6fa;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mode-switcher {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.mode-switcher button {
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid #39404f;
+  background: transparent;
+  color: inherit;
+  transition: background 0.2s ease;
+}
+
+.mode-switcher button.active {
+  background: #1d2331;
+  border-color: #5b89ff;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #1b1f2b;
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+  background: #0a0f1e;
+  display: flex;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #aeb5c7;
+}
+
+.pixi-stage {
+  width: 100%;
+  height: 100%;
+}
+
+.live-client {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.hud-panel {
+  background: rgba(12, 18, 36, 0.9);
+  border: 1px solid #1f2638;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hud-panel h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9fb7ff;
+}
+
+.event-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.event-item {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #2b3146;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.event-kind {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #fad643;
+}
+
+.event-message {
+  font-size: 0.9rem;
+  color: #d9deff;
+}
+
+/* controls panel removed */
+
+.chat-panel {
+  border-top: 1px solid #28304a;
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.chat-header span {
+  font-size: 0.75rem;
+  color: #9fb7ff;
+}
+
+.chat-log {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.chat-author {
+  font-size: 0.75rem;
+  color: #94f2ff;
+}
+
+.chat-text {
+  font-size: 0.85rem;
+}
+
+.chat-host {
+  border: 1px solid #ffd166;
+}
+
+.chat-player {
+  border: 1px solid #4cc9f0;
+}
+
+.chat-spectator {
+  border: 1px solid #adb5bd;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid #2b3146;
+  background: transparent;
+  color: #fff;
+}
+
+.chat-input button {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1px solid #5174b3;
+  background: #1c2d4f;
+  color: #fff;
+}
+
+.chat-status {
+  font-size: 0.75rem;
+  color: #ff6b6b;
+}
+
+.chat-empty {
+  color: #5f6680;
+}
+
+.tactician-help {
+  border-top: 1px solid #28304a;
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.tactician-help h3 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffd166;
+}
+
+.tactician-help ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tactician-help li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+kbd {
+  background: #192136;
+  border: 1px solid #3a4663;
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c6d4ff;
+}
+
+.replay-save {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.replay-save button {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1px solid #49beaa;
+  background: #12352b;
+  color: #8ef5cd;
+}
+
+.replay-save span {
+  color: #8ef5cd;
+}
+
+.replay-client {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  height: 100%;
+  width: 100%;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.replay-sidebar {
+  border: 1px solid #1f2638;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(12, 18, 36, 0.8);
+}
+
+.replay-sidebar h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.replay-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.replay-list button {
+  text-align: left;
+  border-radius: 0.5rem;
+  border: 1px solid #2b3146;
+  padding: 0.5rem;
+  background: transparent;
+  color: inherit;
+}
+
+.replay-list button.active {
+  border-color: #5b89ff;
+  background: rgba(91, 137, 255, 0.1);
+}
+
+.replay-stage {
+  border: 1px solid #1b1f2b;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #05070f;
+}
+
+.replay-stage .pixi-stage {
+  flex: 1;
+}
+
+.replay-controls {
+  padding: 0.75rem;
+  border-top: 1px solid #1f2638;
+  background: rgba(5, 7, 15, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.playback-controls input[type='range'] {
+  flex: 1;
+}
+
+.replay-chat {
+  border-top: 1px solid #28304a;
+  padding-top: 0.5rem;
+}
+
+.replay-chat-log {
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.replay-status {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.6);
+}
+

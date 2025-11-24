@@ -27,6 +27,8 @@ export type BoatState = {
   stallTimer: number
   overEarly: boolean
   fouled: boolean
+  lastInputSeq?: number
+  lastInputAppliedAt?: number
 }
 
 export type RaceMeta = {
@@ -56,6 +58,7 @@ export type PlayerInput = {
   tClient: number
   desiredHeadingDeg?: number
   spin?: 'full'
+  clientSeq?: number
 }
 
 export type RuleId = '10' | '11' | '12' | '18' | '29' | 'other'

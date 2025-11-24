@@ -70,6 +70,15 @@ export class HostLoop {
     } else if (next.phase === 'prestart' && !next.countdownArmed) {
       next.t = -30
     }
+    const appliedAt = Date.now()
+    Object.entries(inputs).forEach(([boatId, input]) => {
+      const seq = input.clientSeq
+      if (typeof seq !== 'number') return
+      const boat = next.boats[boatId]
+      if (!boat) return
+      boat.lastInputSeq = seq
+      boat.lastInputAppliedAt = appliedAt
+    })
     this.applyWindOscillation(next, dt)
 
     const startEvents = this.updateStartLine(next)

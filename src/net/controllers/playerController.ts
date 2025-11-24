@@ -27,6 +27,7 @@ export class PlayerController extends SubscriberController {
     boatId: identity.boatId,
     desiredHeadingDeg: 0,
     tClient: Date.now(),
+    clientSeq: 0,
   }
 
   private inputTimer?: number
@@ -79,6 +80,7 @@ export class PlayerController extends SubscriberController {
         desiredHeadingDeg: this.currentInput.desiredHeadingDeg,
         spin: 'full',
         tClient: Date.now(),
+        clientSeq: update.clientSeq ?? this.currentInput.clientSeq,
       }
       console.debug('[inputs] sent', {
         ...payload,
@@ -92,10 +94,12 @@ export class PlayerController extends SubscriberController {
       return
     }
     const quantizedHeading = quantizeHeading(update.desiredHeadingDeg)
+    const seq = update.clientSeq ?? this.currentInput.clientSeq ?? 0
     this.currentInput = {
       ...this.currentInput,
       desiredHeadingDeg: quantizedHeading,
       tClient: Date.now(),
+      clientSeq: seq,
     }
     this.store.upsertInput(this.currentInput)
   }
@@ -109,6 +113,7 @@ export class PlayerController extends SubscriberController {
       this.currentInput = {
         ...this.currentInput,
         desiredHeadingDeg: desiredHeading,
+        clientSeq: boat.lastInputSeq ?? this.currentInput.clientSeq,
       }
       this.lastPublished = { ...this.currentInput }
       this.store.upsertInput(this.currentInput)

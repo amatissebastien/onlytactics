@@ -42,9 +42,12 @@ export class GameNetwork {
     return () => this.roleListeners.delete(listener)
   }
 
-  updateDesiredHeading(headingDeg: number) {
+  updateDesiredHeading(headingDeg: number, clientSeq?: number) {
     this.latestHeadingDeg = quantizeHeading(headingDeg)
-    this.controller?.updateLocalInput?.({ desiredHeadingDeg: this.latestHeadingDeg })
+    this.controller?.updateLocalInput?.({
+      desiredHeadingDeg: this.latestHeadingDeg,
+      clientSeq,
+    })
   }
 
   requestSpin() {

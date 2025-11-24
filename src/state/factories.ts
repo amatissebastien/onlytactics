@@ -48,6 +48,8 @@ export const createBoatState = (
     stallTimer: 0,
     overEarly: false,
     fouled: false,
+    lastInputSeq: 0,
+    lastInputAppliedAt: 0,
   }
 }
 

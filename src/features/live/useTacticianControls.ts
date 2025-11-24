@@ -3,6 +3,7 @@ import type { RaceRole } from '@/types/race'
 import { useRaceState } from '@/state/hooks'
 import { identity } from '@/net/identity'
 import { GameNetwork } from '@/net/gameNetwork'
+import { raceStore } from '@/state/raceStore'
 import {
   angleDiff,
   apparentWindAngleSigned,
@@ -36,6 +37,9 @@ export const useTacticianControls = (
   const networkRef = useRef(network)
   const roleRef = useRef(role)
   const lockUntilRef = useRef(0)
+  const seqRef = useRef(0)
+  const pendingRef = useRef(new Map<number, number>())
+  const lastAckSeqRef = useRef(0)
 
   useEffect(() => {
     raceRef.current = raceState
@@ -88,12 +92,13 @@ export const useTacticianControls = (
       const absAwa = Math.abs(awa)
       const vmgAngles = computeVmgAngles(state.wind.speed)
 
-      const lastRounded = quantizeHeading(lastHeading)
-
       const sendHeading = (heading: number) => {
         const rounded = quantizeHeading(heading)
+        const lastRounded = quantizeHeading(lastHeading)
         if (rounded === lastRounded) return
-        networkRef.current?.updateDesiredHeading(rounded)
+        const seq = (seqRef.current += 1)
+        pendingRef.current.set(seq, performance.now())
+        networkRef.current?.updateDesiredHeading(rounded, seq)
         event.preventDefault()
       }
 
@@ -155,5 +160,19 @@ export const useTacticianControls = (
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [network, role])
+
+  useEffect(() => {
+    const boat = raceRef.current.boats[identity.boatId]
+    if (!boat?.lastInputSeq) return
+    if (boat.lastInputSeq === lastAckSeqRef.current) return
+    lastAckSeqRef.current = boat.lastInputSeq
+    const sentAt = pendingRef.current.get(boat.lastInputSeq)
+    if (sentAt === undefined) {
+      return
+    }
+    pendingRef.current.delete(boat.lastInputSeq)
+    const latencyMs = performance.now() - sentAt
+    raceStore.recordInputLatency(boat.id, boat.lastInputSeq, latencyMs)
+  }, [raceState])
 }
 

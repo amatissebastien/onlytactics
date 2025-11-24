@@ -40,6 +40,7 @@ export class HostController extends BaseController {
   private publishTimer?: number
 
   private lastInputTs = new Map<string, number>()
+  private lastInputSeq = new Map<string, number>()
 
   private activeSpins = new Map<string, number[]>()
 
@@ -158,6 +159,14 @@ export class HostController extends BaseController {
     if (lastTs === timestamp) return
     this.lastInputTs.set(input.boatId, timestamp)
 
+    if (typeof input.clientSeq === 'number') {
+      const lastSeq = this.lastInputSeq.get(input.boatId)
+      if (lastSeq === input.clientSeq) {
+        return
+      }
+      this.lastInputSeq.set(input.boatId, input.clientSeq)
+    }
+
     if (input.spin === 'full') {
       console.debug('[inputs] spin requested', input)
       this.queueSpin(input.boatId)
@@ -176,6 +185,7 @@ export class HostController extends BaseController {
       boatId: input.boatId,
       desiredHeadingDeg: input.desiredHeadingDeg,
       tClient: timestamp,
+      clientSeq: input.clientSeq,
     })
     this.store.upsertInput({
       ...input,

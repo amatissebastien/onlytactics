@@ -1,6 +1,7 @@
 export type ControlUpdate = {
   desiredHeadingDeg?: number
   spin?: 'full'
+  clientSeq?: number
 }
 
 export interface Controller {

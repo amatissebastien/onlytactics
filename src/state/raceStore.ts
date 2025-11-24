@@ -4,16 +4,29 @@ import { cloneRaceState, createInitialRaceState } from './factories'
 
 type Listener = () => void
 
+type InputLatency = {
+  boatId: string
+  seq: number
+  latencyMs: number
+  updatedAt: number
+}
+
+export type InputTelemetrySnapshot = Record<string, InputLatency>
+
 export class RaceStore {
   private state: RaceState
 
   private listeners = new Set<Listener>()
+
+  private telemetryListeners = new Set<Listener>()
 
   private latestInputs: Record<string, PlayerInput> = {}
 
   private recentEvents: RaceEvent[] = []
 
   private chatLog: ChatMessage[] = []
+
+  private inputTelemetry: Record<string, InputLatency> = {}
 
   constructor(initialState: RaceState) {
     this.state = initialState
@@ -35,6 +48,11 @@ export class RaceStore {
   subscribe = (listener: Listener) => {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
+  }
+
+  subscribeTelemetry = (listener: Listener) => {
+    this.telemetryListeners.add(listener)
+    return () => this.telemetryListeners.delete(listener)
   }
 
   upsertInput = (input: PlayerInput) => {
@@ -85,6 +103,18 @@ export class RaceStore {
 
   getChatLog = () => this.chatLog
 
+  recordInputLatency = (boatId: string, seq: number, latencyMs: number) => {
+    this.inputTelemetry[boatId] = {
+      boatId,
+      seq,
+      latencyMs,
+      updatedAt: typeof performance !== 'undefined' ? performance.now() : Date.now(),
+    }
+    this.emitTelemetry()
+  }
+
+  getInputTelemetry = () => this.inputTelemetry
+
   reset = (state: RaceState) => {
     this.state = cloneRaceState(state)
     this.latestInputs = {}
@@ -97,6 +127,9 @@ export class RaceStore {
     this.listeners.forEach((listener) => listener())
   }
 
+  private emitTelemetry() {
+    this.telemetryListeners.forEach((listener) => listener())
+  }
 }
 
 export const raceStore = new RaceStore(createInitialRaceState(appEnv.raceId))

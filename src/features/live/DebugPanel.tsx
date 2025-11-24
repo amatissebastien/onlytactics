@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useRaceState } from '@/state/hooks'
+import { useInputTelemetry, useRaceState } from '@/state/hooks'
 import { identity } from '@/net/identity'
 import { apparentWindAngleSigned, angleDiff } from '@/logic/physics'
 
@@ -13,7 +13,9 @@ type Props = {
 
 export const DebugPanel = ({ onClose }: Props) => {
   const race = useRaceState()
+  const telemetry = useInputTelemetry()
   const brokerLabel = 'Broker: CloudAMQP'
+  const myLatency = telemetry[identity.boatId]
 
   const boats = useMemo(
     () =>
@@ -44,6 +46,14 @@ export const DebugPanel = ({ onClose }: Props) => {
       <div className="debug-row">
         <strong>{brokerLabel}</strong>
       </div>
+      <div className="debug-row">
+        <strong>Input RTT:</strong>
+        <span>
+          {myLatency
+            ? `${myLatency.latencyMs.toFixed(0)} ms (seq ${myLatency.seq})`
+            : 'n/a'}
+        </span>
+      </div>
       <div className="debug-table">
         <div className="debug-table-header">
           <span>Boat</span>
@@ -73,6 +83,26 @@ export const DebugPanel = ({ onClose }: Props) => {
               <span>{boat.stallTimer.toFixed(1)} s</span>
               <span>{formatCoord(boat.pos.x)}</span>
               <span>{formatCoord(boat.pos.y)}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="debug-table">
+        <div className="debug-table-header">
+          <span>Boat</span>
+          <span>Seq</span>
+          <span>RTT</span>
+        </div>
+        {boats.map((boat) => {
+          const data = telemetry[boat.id]
+          return (
+            <div
+              key={`${boat.id}-telemetry`}
+              className={`debug-table-row${boat.id === identity.boatId ? ' self' : ''}`}
+            >
+              <span>{boat.name}</span>
+              <span>{data?.seq ?? '—'}</span>
+              <span>{data ? `${data.latencyMs.toFixed(0)} ms` : '—'}</span>
             </div>
           )
         })}

@@ -1,5 +1,7 @@
 export type ControlUpdate = {
   desiredHeadingDeg?: number
+  absoluteHeadingDeg?: number
+  deltaHeadingDeg?: number
   spin?: 'full'
   clientSeq?: number
 }

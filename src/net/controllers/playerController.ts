@@ -27,16 +27,12 @@ export class PlayerController extends SubscriberController {
     boatId: identity.boatId,
     desiredHeadingDeg: 0,
     tClient: Date.now(),
-    clientSeq: 0,
+    seq: 0,
   }
-
-  private inputTimer?: number
 
   private failoverTimer?: number
 
   private lastStateMs = Date.now()
-
-  private lastPublished?: PlayerInput
 
   private currentHostId?: string
 
@@ -63,43 +59,67 @@ export class PlayerController extends SubscriberController {
         this.handlePresence(payload),
       ),
     )
-    this.inputTimer = window.setInterval(() => this.flushInput(), 100)
     this.failoverTimer = window.setInterval(() => this.checkFailover(), 1000)
   }
 
   protected onStop() {
     super.onStop()
-    if (this.inputTimer) clearInterval(this.inputTimer)
     if (this.failoverTimer) clearInterval(this.failoverTimer)
   }
 
   updateLocalInput(update: ControlUpdate) {
+    const seq =
+      update.clientSeq ??
+      (typeof this.currentInput.seq === 'number' ? this.currentInput.seq + 1 : 1)
+    const timestamp = Date.now()
+    const payload: PlayerInput = {
+      boatId: identity.boatId,
+      tClient: timestamp,
+      seq,
+    }
+
     if (update.spin === 'full') {
-      const payload: PlayerInput = {
-        boatId: identity.boatId,
-        desiredHeadingDeg: this.currentInput.desiredHeadingDeg,
-        spin: 'full',
-        tClient: Date.now(),
-        clientSeq: update.clientSeq ?? this.currentInput.clientSeq,
+      payload.spin = 'full'
+      payload.desiredHeadingDeg = this.currentInput.desiredHeadingDeg
+    } else {
+      if (
+        typeof update.absoluteHeadingDeg !== 'number' &&
+        typeof update.desiredHeadingDeg !== 'number' &&
+        typeof update.deltaHeadingDeg !== 'number'
+      ) {
+        return
       }
-      console.debug('[inputs] sent', {
-        ...payload,
-        headingText: formatHeadingLabel(payload.desiredHeadingDeg),
-      })
-      this.mqtt.publish(inputsTopic(identity.boatId), payload, { qos: 0 })
-      this.lastPublished = undefined
-      return
+      const absolute =
+        typeof update.absoluteHeadingDeg === 'number'
+          ? quantizeHeading(update.absoluteHeadingDeg)
+          : typeof update.desiredHeadingDeg === 'number'
+            ? quantizeHeading(update.desiredHeadingDeg)
+            : undefined
+      if (typeof absolute === 'number') {
+        payload.absoluteHeadingDeg = absolute
+        payload.desiredHeadingDeg = absolute
+      }
+      if (typeof update.deltaHeadingDeg === 'number') {
+        payload.deltaHeadingDeg = update.deltaHeadingDeg
+      }
+      if (
+        typeof payload.absoluteHeadingDeg !== 'number' &&
+        typeof payload.deltaHeadingDeg !== 'number'
+      ) {
+        return
+      }
     }
-    if (typeof update.desiredHeadingDeg !== 'number') {
-      return
-    }
-    const quantizedHeading = quantizeHeading(update.desiredHeadingDeg)
-    const seq = update.clientSeq ?? this.currentInput.clientSeq ?? 0
+
+    console.debug('[inputs] sent', {
+      ...payload,
+      headingText: formatHeadingLabel(payload.desiredHeadingDeg ?? payload.absoluteHeadingDeg),
+    })
+    this.mqtt.publish(inputsTopic(identity.boatId), payload, { qos: 0 })
     this.currentInput = {
       ...this.currentInput,
-      desiredHeadingDeg: quantizedHeading,
-      tClient: Date.now(),
-      clientSeq: seq,
+      desiredHeadingDeg: payload.desiredHeadingDeg ?? this.currentInput.desiredHeadingDeg,
+      tClient: timestamp,
+      seq,
     }
     this.store.upsertInput(this.currentInput)
   }
@@ -113,27 +133,10 @@ export class PlayerController extends SubscriberController {
       this.currentInput = {
         ...this.currentInput,
         desiredHeadingDeg: desiredHeading,
-        clientSeq: boat.lastInputSeq ?? this.currentInput.clientSeq,
+        seq: boat.lastInputSeq ?? this.currentInput.seq,
       }
-      this.lastPublished = { ...this.currentInput }
       this.store.upsertInput(this.currentInput)
     }
-  }
-
-  private flushInput() {
-    const hasChanged =
-      !this.lastPublished ||
-      this.lastPublished.boatId !== this.currentInput.boatId ||
-      this.lastPublished.desiredHeadingDeg !== this.currentInput.desiredHeadingDeg
-
-    if (!hasChanged) return
-
-    this.lastPublished = { ...this.currentInput }
-    console.debug('[inputs] sent', {
-      ...this.currentInput,
-      headingText: formatHeadingLabel(this.currentInput.desiredHeadingDeg),
-    })
-    this.mqtt.publish(inputsTopic(this.currentInput.boatId), this.currentInput, { qos: 0 })
   }
 
   private handleHostAnnouncement(payload?: HostAnnouncement) {

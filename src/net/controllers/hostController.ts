@@ -17,6 +17,7 @@ import {
   presenceWildcard,
 } from '@/net/topics'
 import { BaseController } from './baseController'
+import type { ControlUpdate } from './types'
 import { raceStore, RaceStore } from '@/state/raceStore'
 import type {
   ChatMessage,
@@ -27,7 +28,7 @@ import type {
 import { identity } from '@/net/identity'
 import { replayRecorder } from '@/replay/manager'
 import { SPIN_HOLD_SECONDS } from '@/logic/constants'
-import { normalizeDeg } from '@/logic/physics'
+import { normalizeDeg, quantizeHeading } from '@/logic/physics'
 
 const createEventId = () =>
   typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -43,6 +44,7 @@ export class HostController extends BaseController {
   private lastInputSeq = new Map<string, number>()
 
   private activeSpins = new Map<string, number[]>()
+  private localSeq = 0
 
   constructor(private store: RaceStore = raceStore) {
     super()
@@ -90,26 +92,40 @@ export class HostController extends BaseController {
     )
   }
 
-  updateLocalInput(update: { desiredHeadingDeg?: number; spin?: 'full' }) {
-    const now = Date.now()
-    if (update.spin === 'full') {
-      const boat = this.store.getState().boats[identity.boatId]
-      const heading = boat?.desiredHeadingDeg ?? boat?.headingDeg ?? 0
-      const payload: PlayerInput = {
-        boatId: identity.boatId,
-        desiredHeadingDeg: heading,
-        spin: 'full',
-        tClient: now,
-      }
-      console.debug('[inputs] sent', payload)
-      this.mqtt.publish(inputsTopic(payload.boatId), payload, { qos: 0 })
-      return
-    }
-    if (typeof update.desiredHeadingDeg !== 'number') return
+  updateLocalInput(update: ControlUpdate) {
+    const seq = update.clientSeq ?? ++this.localSeq
+    const timestamp = Date.now()
     const payload: PlayerInput = {
       boatId: identity.boatId,
-      desiredHeadingDeg: update.desiredHeadingDeg,
-      tClient: now,
+      tClient: timestamp,
+      seq,
+    }
+    if (update.spin === 'full') {
+      const boat = this.store.getState().boats[identity.boatId]
+      const heading = quantizeHeading(boat?.desiredHeadingDeg ?? boat?.headingDeg ?? 0)
+      payload.spin = 'full'
+      payload.absoluteHeadingDeg = heading
+      payload.desiredHeadingDeg = heading
+    } else {
+      const absolute =
+        typeof update.absoluteHeadingDeg === 'number'
+          ? quantizeHeading(update.absoluteHeadingDeg)
+          : typeof update.desiredHeadingDeg === 'number'
+            ? quantizeHeading(update.desiredHeadingDeg)
+            : undefined
+      if (typeof absolute === 'number') {
+        payload.absoluteHeadingDeg = absolute
+        payload.desiredHeadingDeg = absolute
+      }
+      if (typeof update.deltaHeadingDeg === 'number') {
+        payload.deltaHeadingDeg = update.deltaHeadingDeg
+      }
+      if (
+        typeof payload.absoluteHeadingDeg !== 'number' &&
+        typeof payload.deltaHeadingDeg !== 'number'
+      ) {
+        return
+      }
     }
     console.debug('[inputs] sent', payload)
     this.mqtt.publish(inputsTopic(payload.boatId), payload, { qos: 0 })
@@ -155,16 +171,17 @@ export class HostController extends BaseController {
       typeof input.tClient === 'number' ? input.tClient : Number(input.tClient ?? 0)
     if (!Number.isFinite(timestamp)) return
 
-    const lastTs = this.lastInputTs.get(input.boatId)
-    if (lastTs === timestamp) return
-    this.lastInputTs.set(input.boatId, timestamp)
-
-    if (typeof input.clientSeq === 'number') {
+    const seq = input.seq
+    if (typeof seq === 'number') {
       const lastSeq = this.lastInputSeq.get(input.boatId)
-      if (lastSeq === input.clientSeq) {
+      if (lastSeq === seq) {
         return
       }
-      this.lastInputSeq.set(input.boatId, input.clientSeq)
+      this.lastInputSeq.set(input.boatId, seq)
+    } else {
+      const lastTs = this.lastInputTs.get(input.boatId)
+      if (lastTs === timestamp) return
+      this.lastInputTs.set(input.boatId, timestamp)
     }
 
     if (input.spin === 'full') {
@@ -177,19 +194,35 @@ export class HostController extends BaseController {
       return
     }
 
-    if (typeof input.desiredHeadingDeg !== 'number') {
+    const state = this.store.getState()
+    const boat = state.boats[input.boatId]
+    const baseHeading = boat ? boat.desiredHeadingDeg ?? boat.headingDeg : undefined
+    let desired: number | undefined
+    if (typeof input.absoluteHeadingDeg === 'number') {
+      desired = quantizeHeading(input.absoluteHeadingDeg)
+    } else if (typeof input.deltaHeadingDeg === 'number' && typeof baseHeading === 'number') {
+      desired = quantizeHeading(baseHeading + input.deltaHeadingDeg)
+    } else if (typeof input.desiredHeadingDeg === 'number') {
+      desired = quantizeHeading(input.desiredHeadingDeg)
+    } else if (typeof baseHeading === 'number') {
+      desired = quantizeHeading(baseHeading)
+    }
+
+    if (typeof desired !== 'number') {
       return
     }
 
     console.debug('[inputs] received', {
       boatId: input.boatId,
-      desiredHeadingDeg: input.desiredHeadingDeg,
+      desiredHeadingDeg: desired,
       tClient: timestamp,
-      clientSeq: input.clientSeq,
+      seq,
     })
     this.store.upsertInput({
       ...input,
+      desiredHeadingDeg: desired,
       tClient: timestamp,
+      seq: seq ?? input.seq ?? -1,
     })
   }
 
@@ -219,10 +252,14 @@ export class HostController extends BaseController {
   }
 
   private injectHeading(boatId: string, heading: number) {
+    const seq = ++this.localSeq
+    const normalized = normalizeDeg(heading)
     const payload: PlayerInput = {
       boatId,
-      desiredHeadingDeg: normalizeDeg(heading),
+      desiredHeadingDeg: normalized,
+      absoluteHeadingDeg: normalized,
       tClient: Date.now(),
+      seq,
     }
     this.lastInputTs.set(boatId, payload.tClient)
     console.debug('[inputs] spin step', payload)

@@ -56,9 +56,11 @@ export type RaceState = {
 export type PlayerInput = {
   boatId: string
   tClient: number
+  seq: number
   desiredHeadingDeg?: number
+  absoluteHeadingDeg?: number
+  deltaHeadingDeg?: number
   spin?: 'full'
-  clientSeq?: number
 }
 
 export type RuleId = '10' | '11' | '12' | '18' | '29' | 'other'

@@ -97,8 +97,9 @@ export const useTacticianControls = (
         const lastRounded = quantizeHeading(lastHeading)
         if (rounded === lastRounded) return
         const seq = (seqRef.current += 1)
+        const delta = angleDiff(rounded, lastRounded)
         pendingRef.current.set(seq, performance.now())
-        networkRef.current?.updateDesiredHeading(rounded, seq)
+        networkRef.current?.updateDesiredHeading(rounded, seq, delta)
         event.preventDefault()
       }
 
@@ -150,7 +151,9 @@ export const useTacticianControls = (
         }
         case 'KeyS': {
           event.preventDefault()
-          networkRef.current?.requestSpin()
+          const seq = (seqRef.current += 1)
+          pendingRef.current.set(seq, performance.now())
+          networkRef.current?.requestSpin(seq)
           break
         }
         default:

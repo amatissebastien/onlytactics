@@ -57,16 +57,19 @@ export class GameNetwork {
     return () => this.statusListeners.delete(listener)
   }
 
-  updateDesiredHeading(headingDeg: number, clientSeq?: number) {
-    this.latestHeadingDeg = quantizeHeading(headingDeg)
+  updateDesiredHeading(headingDeg: number, seq: number, deltaHeadingDeg?: number) {
+    const absolute = quantizeHeading(headingDeg)
+    this.latestHeadingDeg = absolute
     this.controller?.updateLocalInput?.({
-      desiredHeadingDeg: this.latestHeadingDeg,
-      clientSeq,
+      desiredHeadingDeg: absolute,
+      absoluteHeadingDeg: absolute,
+      deltaHeadingDeg,
+      clientSeq: seq,
     })
   }
 
-  requestSpin() {
-    this.controller?.updateLocalInput?.({ spin: 'full' })
+  requestSpin(seq?: number) {
+    this.controller?.updateLocalInput?.({ spin: 'full', clientSeq: seq })
   }
 
   private async setRole(role: RaceRole) {

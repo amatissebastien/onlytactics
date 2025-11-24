@@ -72,7 +72,7 @@ export class HostLoop {
     }
     const appliedAt = Date.now()
     Object.entries(inputs).forEach(([boatId, input]) => {
-      const seq = input.clientSeq
+      const seq = input.seq
       if (typeof seq !== 'number') return
       const boat = next.boats[boatId]
       if (!boat) return
